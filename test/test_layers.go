@@ -1,12 +1,15 @@
 package test
 
 import (
-	data "godl/data"
+	"godl/data"
 	nn "godl/nn"
 )
 
 func TestLayers() {
-	l := nn.NewLinear(2, 3, true)
-	t := data.NewTensor(data.NewShape([]int{5, 2}))
-	l.Forward(t).Print()
+	s := nn.NewSequential()
+	s.AddModule(nn.NewLinear(2, 5, true))
+	s.AddModule(nn.NewSigmoid())
+	s.AddModule(nn.NewLinear(5, 3, true))
+	t := data.NewTensor(data.NewShape([]int{3, 2}))
+	s.Forward(t).Print()
 }

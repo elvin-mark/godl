@@ -5,7 +5,7 @@ type logBackward struct {
 	result *Tensor
 }
 
-func NewLogBackward(t1 *Tensor, result *Tensor) Backward {
+func NewLogBackward(t1 *Tensor, result *Tensor) Node {
 	return &logBackward{
 		t1:     t1,
 		result: result,
@@ -14,4 +14,8 @@ func NewLogBackward(t1 *Tensor, result *Tensor) Backward {
 
 func (ab *logBackward) Backward(loss *Tensor) {
 
+}
+
+func (ab *logBackward) IsLeaf() bool {
+	return false
 }

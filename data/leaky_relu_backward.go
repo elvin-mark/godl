@@ -6,7 +6,7 @@ type leakyReLUBackward struct {
 	result *Tensor
 }
 
-func NewLeakyReLUBackward(t1 *Tensor, alpha float64, result *Tensor) Backward {
+func NewLeakyReLUBackward(t1 *Tensor, alpha float64, result *Tensor) Node {
 	return &leakyReLUBackward{
 		t1:     t1,
 		alpha:  alpha,
@@ -16,4 +16,8 @@ func NewLeakyReLUBackward(t1 *Tensor, alpha float64, result *Tensor) Backward {
 
 func (ab *leakyReLUBackward) Backward(loss *Tensor) {
 
+}
+
+func (ab *leakyReLUBackward) IsLeaf() bool {
+	return false
 }

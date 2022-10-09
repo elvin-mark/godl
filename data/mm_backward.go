@@ -6,7 +6,7 @@ type mmBackward struct {
 	result *Tensor
 }
 
-func NewMmBackward(t1 *Tensor, t2 *Tensor, result *Tensor) Backward {
+func NewMmBackward(t1 *Tensor, t2 *Tensor, result *Tensor) Node {
 	return &mmBackward{
 		t1:     t1,
 		t2:     t2,
@@ -16,4 +16,8 @@ func NewMmBackward(t1 *Tensor, t2 *Tensor, result *Tensor) Backward {
 
 func (ab *mmBackward) Backward(loss *Tensor) {
 
+}
+
+func (ab *mmBackward) IsLeaf() bool {
+	return false
 }

@@ -5,7 +5,7 @@ type expBackward struct {
 	result *Tensor
 }
 
-func NewExpBackward(t1 *Tensor, result *Tensor) Backward {
+func NewExpBackward(t1 *Tensor, result *Tensor) Node {
 	return &expBackward{
 		t1:     t1,
 		result: result,
@@ -14,4 +14,8 @@ func NewExpBackward(t1 *Tensor, result *Tensor) Backward {
 
 func (ab *expBackward) Backward(loss *Tensor) {
 
+}
+
+func (ab *expBackward) IsLeaf() bool {
+	return false
 }

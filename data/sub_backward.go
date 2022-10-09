@@ -6,7 +6,7 @@ type subBackward struct {
 	result *Tensor
 }
 
-func NewSubBackward(t1 *Tensor, t2 *Tensor, result *Tensor) Backward {
+func NewSubBackward(t1 *Tensor, t2 *Tensor, result *Tensor) Node {
 	return &subBackward{
 		t1:     t1,
 		t2:     t2,
@@ -16,4 +16,8 @@ func NewSubBackward(t1 *Tensor, t2 *Tensor, result *Tensor) Backward {
 
 func (ab *subBackward) Backward(loss *Tensor) {
 
+}
+
+func (ab *subBackward) IsLeaf() bool {
+	return false
 }

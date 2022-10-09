@@ -11,7 +11,7 @@ type Tensor struct {
 	shape        *Shape
 	stride       *Stride
 	grad         *Tensor
-	node         Backward
+	node         Node
 	requiresGrad bool
 }
 
@@ -24,6 +24,7 @@ func NewTensor(shape *Shape) (t *Tensor) {
 		stride:       stride,
 		requiresGrad: false,
 	}
+	t.node = NewLeafNode(t)
 	return
 }
 
@@ -74,6 +75,20 @@ func (t *Tensor) RandN(mean float64, std float64) {
 
 func (t *Tensor) SetRequiresGrad(requiresGrad bool) {
 	t.requiresGrad = requiresGrad
+	if requiresGrad && t.grad == nil {
+		t.grad = NewTensor(t.shape)
+	}
+}
+
+func (t *Tensor) SetGrad(grad *Tensor) {
+	t.grad = grad
+}
+
+func (t *Tensor) Item() float64 {
+	if len(t.data) == 0 {
+		panic("no data")
+	}
+	return t.data[0]
 }
 
 func (t *Tensor) Add(s *Tensor) (r *Tensor) {

@@ -5,7 +5,7 @@ type geluBackward struct {
 	result *Tensor
 }
 
-func NewGeLUBackward(t1 *Tensor, result *Tensor) Backward {
+func NewGeLUBackward(t1 *Tensor, result *Tensor) Node {
 	return &geluBackward{
 		t1:     t1,
 		result: result,
@@ -14,4 +14,8 @@ func NewGeLUBackward(t1 *Tensor, result *Tensor) Backward {
 
 func (ab *geluBackward) Backward(loss *Tensor) {
 
+}
+
+func (ab *geluBackward) IsLeaf() bool {
+	return false
 }
