@@ -16,7 +16,7 @@ func NewLeafNode(t *Tensor) (l Node) {
 }
 
 func (b *leafNode) Backward(loss *Tensor) {
-	b.t.grad.Add(loss)
+	b.t.grad.data = b.t.grad.Add(loss).data
 }
 
 func (b *leafNode) IsLeaf() bool {

@@ -84,11 +84,39 @@ func (t *Tensor) SetGrad(grad *Tensor) {
 	t.grad = grad
 }
 
+func (t *Tensor) GetGrad() *Tensor {
+	return t.grad
+}
+
 func (t *Tensor) Item() float64 {
 	if len(t.data) == 0 {
 		panic("no data")
 	}
 	return t.data[0]
+}
+
+func (t *Tensor) Backward(loss *Tensor) {
+	if t.requiresGrad {
+		if loss == nil {
+			loss = NewTensor(NewShape([]int{1}))
+			loss.data[0] = 1.0
+		}
+		t.node.Backward(loss)
+	}
+}
+
+func (t *Tensor) Transpose() (r *Tensor) {
+	// TODO: Add Transpose Backward
+	n := len(t.stride.data)
+	newStrideData := make([]int, n)
+	newShapeData := make([]int, n)
+	for i := 0; i < n; i++ {
+		newStrideData[i] = t.stride.data[n-i-1]
+		newShapeData[i] = t.shape.data[n-i-1]
+	}
+	t.stride = NewStride(newStrideData)
+	t.shape = NewShape(newShapeData)
+	return
 }
 
 func (t *Tensor) Add(s *Tensor) (r *Tensor) {
