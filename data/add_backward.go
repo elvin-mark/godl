@@ -28,8 +28,10 @@ func (ab *addBackward) Backward(loss *Tensor) {
 		t1_loss.SetBroadcast()
 		t2_loss.SetBroadcast()
 		for _, val := range loss.data {
-			t1_loss.data[t1_loss.stride.GetIndex(idxs)] += val
-			t2_loss.data[t2_loss.stride.GetIndex(idxs)] += val
+			i := t1_loss.stride.GetIndex(idxs)
+			j := t2_loss.stride.GetIndex(idxs)
+			t1_loss.data[i] += val
+			t2_loss.data[j] += val
 			idxs.Increment(loss.shape)
 		}
 		t1_loss.UnsetBroadcast()

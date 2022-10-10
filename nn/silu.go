@@ -15,3 +15,8 @@ func (l *silu) Forward(inp *data.Tensor) (out *data.Tensor) {
 	out = inp.SiLU()
 	return
 }
+
+func (l *silu) GetWeights() (weights []*data.Tensor) {
+	weights = []*data.Tensor{}
+	return
+}

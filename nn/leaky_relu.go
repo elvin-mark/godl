@@ -16,3 +16,8 @@ func (l *leakyReLU) Forward(inp *data.Tensor) (out *data.Tensor) {
 	out = inp.LeakyReLU(l.alpha)
 	return
 }
+
+func (l *leakyReLU) GetWeights() (weights []*data.Tensor) {
+	weights = []*data.Tensor{}
+	return
+}

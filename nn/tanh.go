@@ -15,3 +15,8 @@ func (l *tanh) Forward(inp *data.Tensor) (out *data.Tensor) {
 	out = inp.Sigmoid()
 	return
 }
+
+func (l *tanh) GetWeights() (weights []*data.Tensor) {
+	weights = []*data.Tensor{}
+	return
+}

@@ -18,8 +18,16 @@ func (s *sequential) AddModule(m Module) {
 
 func (s *sequential) Forward(inp *data.Tensor) (out *data.Tensor) {
 	out = inp
-	for _, layer := range s.modules {
-		out = layer.Forward(out)
+	for _, module := range s.modules {
+		out = module.Forward(out)
+	}
+	return
+}
+
+func (s *sequential) GetWeights() (weights []*data.Tensor) {
+	weights = []*data.Tensor{}
+	for _, module := range s.modules {
+		weights = append(weights, module.GetWeights()...)
 	}
 	return
 }

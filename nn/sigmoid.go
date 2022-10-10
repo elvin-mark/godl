@@ -15,3 +15,8 @@ func (l *sigmoid) Forward(inp *data.Tensor) (out *data.Tensor) {
 	out = inp.Sigmoid()
 	return
 }
+
+func (l *sigmoid) GetWeights() (weights []*data.Tensor) {
+	weights = []*data.Tensor{}
+	return
+}

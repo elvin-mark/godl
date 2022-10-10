@@ -28,13 +28,31 @@ func NewTensor(shape *Shape) (t *Tensor) {
 	return
 }
 
+func (t *Tensor) Clone() (r *Tensor) {
+	r = &Tensor{
+		data:         t.data,
+		stride:       t.stride,
+		shape:        t.shape,
+		requiresGrad: t.requiresGrad,
+	}
+	r.node = NewLeafNode(r)
+	return
+}
+
 func (t *Tensor) String() string {
 
 	return ""
 }
 
 func (t *Tensor) Print() {
-	fmt.Println(t.data)
+	fmt.Println("Stride: ", t.stride.data)
+	fmt.Println("Shape: ", t.shape.data)
+	fmt.Println("RequiresGrad: ", t.requiresGrad)
+	fmt.Println("Data: ", t.data)
+}
+
+func (t *Tensor) Size() int {
+	return t.shape.Size()
 }
 
 func (t *Tensor) SetBroadcast() {
@@ -88,6 +106,19 @@ func (t *Tensor) GetGrad() *Tensor {
 	return t.grad
 }
 
+func (t *Tensor) ZeroGrad() {
+	if t.grad != nil {
+		t.grad.Zeros()
+	}
+}
+
+func (t *Tensor) SetData(data []float64) {
+	if len(data) != t.shape.Size() {
+		panic("Length of data does not match tensor size")
+	}
+	t.data = data
+}
+
 func (t *Tensor) Item() float64 {
 	if len(t.data) == 0 {
 		panic("no data")
@@ -107,15 +138,16 @@ func (t *Tensor) Backward(loss *Tensor) {
 
 func (t *Tensor) Transpose() (r *Tensor) {
 	// TODO: Add Transpose Backward
+	r = t.Clone()
 	n := len(t.stride.data)
 	newStrideData := make([]int, n)
 	newShapeData := make([]int, n)
 	for i := 0; i < n; i++ {
-		newStrideData[i] = t.stride.data[n-i-1]
-		newShapeData[i] = t.shape.data[n-i-1]
+		newStrideData[i] = r.stride.data[n-i-1]
+		newShapeData[i] = r.shape.data[n-i-1]
 	}
-	t.stride = NewStride(newStrideData)
-	t.shape = NewShape(newShapeData)
+	r.stride = NewStride(newStrideData)
+	r.shape = NewShape(newShapeData)
 	return
 }
 
@@ -142,8 +174,8 @@ func (t *Tensor) Add(s *Tensor) (r *Tensor) {
 	}
 	if t.requiresGrad || s.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewAddBackward(t, s, r)
 	}
-	r.node = NewAddBackward(t, s, r)
 	return
 }
 
@@ -170,8 +202,8 @@ func (t *Tensor) Sub(s *Tensor) (r *Tensor) {
 	}
 	if t.requiresGrad || s.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewSubBackward(t, s, r)
 	}
-	r.node = NewSubBackward(t, s, r)
 	return
 }
 
@@ -198,8 +230,8 @@ func (t *Tensor) Mul(s *Tensor) (r *Tensor) {
 	}
 	if t.requiresGrad || s.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewMulBackward(t, s, r)
 	}
-	r.node = NewMulBackward(t, s, r)
 	return
 }
 
@@ -226,8 +258,8 @@ func (t *Tensor) Div(s *Tensor) (r *Tensor) {
 	}
 	if t.requiresGrad || s.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewDivBackward(t, s, r)
 	}
-	r.node = NewDivBackward(t, s, r)
 	return
 }
 
@@ -253,8 +285,8 @@ func (t *Tensor) Mm(s *Tensor) (r *Tensor) {
 	}
 	if t.requiresGrad || s.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewMmBackward(t, s, r)
 	}
-	r.node = NewMmBackward(t, s, r)
 	return
 }
 
@@ -265,8 +297,8 @@ func (t *Tensor) Pow(exp float64) (r *Tensor) {
 	}
 	if t.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewPowBackward(t, exp, r)
 	}
-	r.node = NewPowBackward(t, exp, r)
 	return
 }
 
@@ -277,8 +309,8 @@ func (t *Tensor) Log() (r *Tensor) {
 	}
 	if t.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewLogBackward(t, r)
 	}
-	r.node = NewLogBackward(t, r)
 	return
 }
 
@@ -289,8 +321,8 @@ func (t *Tensor) Exp() (r *Tensor) {
 	}
 	if t.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewExpBackward(t, r)
 	}
-	r.node = NewExpBackward(t, r)
 	return
 }
 
@@ -301,8 +333,8 @@ func (t *Tensor) Sigmoid() (r *Tensor) {
 	}
 	if t.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewSigmoidBackward(t, r)
 	}
-	r.node = NewSigmoidBackward(t, r)
 	return
 }
 
@@ -313,8 +345,8 @@ func (t *Tensor) Tanh() (r *Tensor) {
 	}
 	if t.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewTanhBackward(t, r)
 	}
-	r.node = NewTanhBackward(t, r)
 	return
 }
 
@@ -325,8 +357,8 @@ func (t *Tensor) ReLU() (r *Tensor) {
 	}
 	if t.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewReLUBackward(t, r)
 	}
-	r.node = NewReLUBackward(t, r)
 	return
 }
 
@@ -337,8 +369,8 @@ func (t *Tensor) LeakyReLU(alpha float64) (r *Tensor) {
 	}
 	if t.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewLeakyReLUBackward(t, alpha, r)
 	}
-	r.node = NewLeakyReLUBackward(t, alpha, r)
 	return
 }
 
@@ -349,8 +381,8 @@ func (t *Tensor) SiLU() (r *Tensor) {
 	}
 	if t.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewSiLUBackward(t, r)
 	}
-	r.node = NewSiLUBackward(t, r)
 	return
 }
 
@@ -361,7 +393,21 @@ func (t *Tensor) GeLU() (r *Tensor) {
 	}
 	if t.requiresGrad {
 		r.SetRequiresGrad(true)
+		r.node = NewGeLUBackward(t, r)
 	}
-	r.node = NewGeLUBackward(t, r)
+	return
+}
+
+func (t *Tensor) Mean() (r *Tensor) {
+	r = NewTensor(NewShape([]int{1}))
+	sum := 0.
+	for _, val := range t.data {
+		sum += val
+	}
+	r.data[0] = sum / float64(t.shape.Size())
+	if t.requiresGrad {
+		r.SetRequiresGrad(true)
+		r.node = NewMeanBackward(t, r)
+	}
 	return
 }
