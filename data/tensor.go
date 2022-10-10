@@ -119,6 +119,14 @@ func (t *Tensor) SetData(data []float64) {
 	t.data = data
 }
 
+func (t *Tensor) GetData() []float64 {
+	return t.data
+}
+
+func (t *Tensor) GetDim() int {
+	return len(t.shape.data)
+}
+
 func (t *Tensor) Item() float64 {
 	if len(t.data) == 0 {
 		panic("no data")
