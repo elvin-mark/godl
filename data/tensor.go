@@ -419,3 +419,253 @@ func (t *Tensor) Mean() (r *Tensor) {
 	}
 	return
 }
+
+func (t *Tensor) Conv1d(s *Tensor, stride int, padding int) (r *Tensor) {
+	// shape of tensor: [N, Cin, L]
+	// shape of kernel: [Cout, Cin, K]
+	if t.GetDim() != 3 || s.GetDim() != 3 {
+		panic("Conv1d: only support convolution on 3D tensor")
+	}
+	N := t.shape.data[0]
+	Cin := t.shape.data[1]
+	L := t.shape.data[2]
+	Cout := s.shape.data[0]
+	K := s.shape.data[2]
+
+	var raw_k int
+
+	if Cin != s.shape.data[1] {
+		panic("Conv1d: convolution requires the number of channels of the first tensor to be equal to the number of channels of the second tensor")
+	}
+	new_L := (L-K+2*padding)/stride + 1
+	new_shape := []int{N, Cout, new_L}
+
+	r = NewTensor(NewShape(new_shape))
+	t_idx := NewIndices(3)
+	s_idx := NewIndices(3)
+	r_idx := NewIndices(3)
+	for i := 0; i < N; i++ {
+		t_idx.data[0] = i
+		r_idx.data[0] = i
+		for j := 0; j < Cout; j++ {
+			s_idx.data[0] = j
+			r_idx.data[1] = j
+			for k := 0; k < new_L; k++ {
+				sum := 0.
+				for p := 0; p < Cin; p++ {
+					t_idx.data[1] = p
+					s_idx.data[1] = p
+					for q := 0; q < K; q++ {
+						raw_k = k*stride + q - padding
+						if raw_k >= 0 && raw_k < L {
+							t_idx.data[2] = raw_k
+							s_idx.data[2] = q
+							sum += t.data[t.stride.GetIndex(t_idx)] * s.data[s.stride.GetIndex(s_idx)]
+						}
+					}
+				}
+				r_idx.data[2] = k
+				r.data[r.stride.GetIndex(r_idx)] = sum
+			}
+		}
+	}
+
+	if t.requiresGrad || s.requiresGrad {
+		r.SetRequiresGrad(true)
+		r.node = NewConv1dBackward(t, s, stride, padding, r)
+	}
+
+	return
+}
+
+func (t *Tensor) Conv2d(s *Tensor, stride []int, padding []int) (r *Tensor) {
+	// shape of tensor: [N, Cin, H, W]
+	// shape of kernel: [Cout, Cin, K1, K2]
+	if t.GetDim() != 4 || s.GetDim() != 4 {
+		panic("Conv2d: only support convolution on 4D tensor")
+	}
+	if t.shape.data[1] != s.shape.data[1] {
+		panic("Conv2d: convolution requires the number of channels of the first tensor to be equal to the number of channels of the second tensor")
+	}
+	N := t.shape.data[0]
+	Cin := t.shape.data[1]
+	H := t.shape.data[2]
+	W := t.shape.data[3]
+	K1 := s.shape.data[2]
+	K2 := s.shape.data[3]
+	Cout := s.shape.data[0]
+	new_H := (H-K1+2*padding[0])/stride[0] + 1
+	new_W := (W-K2+2*padding[1])/stride[1] + 1
+	new_shape := []int{N, Cout, new_H, new_W}
+	var raw_h, raw_w int
+	r = NewTensor(NewShape(new_shape))
+	t_idx := NewIndices(4)
+	s_idx := NewIndices(4)
+	r_idx := NewIndices(4)
+	for n := 0; n < N; n++ {
+		t_idx.data[0] = n
+		r_idx.data[0] = n
+		for c := 0; c < Cout; c++ {
+			s_idx.data[0] = c
+			r_idx.data[1] = c
+			for h := 0; h < new_H; h++ {
+				for w := 0; w < new_W; w++ {
+					sum := 0.
+					for c1 := 0; c1 < Cin; c1++ {
+						t_idx.data[1] = c1
+						s_idx.data[1] = c1
+						for k1 := 0; k1 < K1; k1++ {
+							for k2 := 0; k2 < K2; k2++ {
+								raw_h = h*stride[0] + k1 - padding[0]
+								raw_w = w*stride[1] + k2 - padding[1]
+								if raw_h >= 0 && raw_h < H && raw_w >= 0 && raw_w < W {
+									t_idx.data[2] = raw_h
+									t_idx.data[3] = raw_w
+
+									s_idx.data[2] = k1
+									s_idx.data[3] = k2
+
+									sum += t.data[t.stride.GetIndex(t_idx)] * s.data[s.stride.GetIndex(s_idx)]
+								}
+							}
+						}
+					}
+					r_idx.data[2] = h
+					r_idx.data[3] = w
+					r.data[r.stride.GetIndex(r_idx)] = sum
+				}
+			}
+		}
+	}
+
+	if t.requiresGrad || s.requiresGrad {
+		r.SetRequiresGrad(true)
+		r.node = NewConv2dBackward(t, s, stride, padding, r)
+	}
+
+	return
+}
+
+func (t *Tensor) MaxPool1d(kernel int) (r *Tensor) {
+	// TODO: Check and Change this
+	new_shape := make([]int, t.GetDim())
+	new_shape[2] = t.shape.data[2] / kernel
+	N := t.shape.data[0]
+	Cin := t.shape.data[1]
+	new_shape[0] = N
+	new_shape[1] = Cin
+
+	L := new_shape[2] * kernel
+
+	r = NewTensor(NewShape(new_shape))
+	t_idx := NewIndices(3)
+	r_idx := NewIndices(3)
+	for i := 0; i < N; i++ {
+		t_idx.data[0] = i
+		r_idx.data[0] = i
+		for j := 0; j < Cin; j++ {
+			t_idx.data[1] = j
+			r_idx.data[1] = j
+			for k := 0; k < L; k += kernel {
+				t_idx.data[2] = k
+				max := t.data[t.stride.GetIndex(t_idx)]
+				for m := 0; m < kernel; m++ {
+					t_idx.data[2] = k + m
+					max = math.Max(max, t.data[t.stride.GetIndex(t_idx)])
+				}
+				r_idx.data[2] = k / kernel
+				r.data[r.stride.GetIndex(r_idx)] = max
+			}
+		}
+	}
+
+	if t.requiresGrad {
+		r.SetRequiresGrad(true)
+		r.node = NewMaxPool1dBackward(t, kernel, r)
+	}
+
+	return
+}
+
+func (t *Tensor) MaxPool2d(kernel []int) (r *Tensor) {
+	new_shape := make([]int, t.GetDim())
+	new_shape[2] = t.shape.data[2] / kernel[0]
+	new_shape[3] = t.shape.data[3] / kernel[1]
+	N := t.shape.data[0]
+	Cin := t.shape.data[1]
+	new_shape[0] = N
+	new_shape[1] = Cin
+
+	H := new_shape[2] * kernel[0]
+	W := new_shape[3] * kernel[1]
+
+	r = NewTensor(NewShape(new_shape))
+	t_idx := NewIndices(4)
+	r_idx := NewIndices(4)
+	for i := 0; i < N; i++ {
+		t_idx.data[0] = i
+		r_idx.data[0] = i
+		for j := 0; j < Cin; j++ {
+			t_idx.data[1] = j
+			r_idx.data[1] = j
+			for k := 0; k < H; k += kernel[0] {
+				t_idx.data[2] = k
+				r_idx.data[2] = k / kernel[0]
+				for l := 0; l < W; l += kernel[1] {
+					t_idx.data[3] = l
+					r_idx.data[3] = l / kernel[1]
+					max := t.data[t.stride.GetIndex(t_idx)]
+					for m := 0; m < kernel[0]; m++ {
+						t_idx.data[2] = k + m
+						for n := 0; n < kernel[1]; n++ {
+							t_idx.data[3] = l + n
+							max = math.Max(max, t.data[t.stride.GetIndex(t_idx)])
+						}
+					}
+					r.data[r.stride.GetIndex(r_idx)] = max
+				}
+			}
+		}
+	}
+
+	if t.requiresGrad {
+		r.SetRequiresGrad(true)
+		r.node = NewMaxPool2dBackward(t, kernel, r)
+	}
+
+	return
+}
+
+func (t *Tensor) Dropout1d(p float64) (r *Tensor) {
+	r = NewTensor(NewShape(t.shape.data))
+	for i := 0; i < t.Size(); i++ {
+		if rand.Float64() < p {
+			r.data[i] = 0
+		} else {
+			r.data[i] = t.data[i] / p
+		}
+	}
+
+	if t.requiresGrad {
+		r.SetRequiresGrad(true)
+		r.node = NewDropout1dBackward(t, p, r)
+	}
+	return
+}
+
+func (t *Tensor) Dropout2d(p float64) (r *Tensor) {
+	r = NewTensor(NewShape(t.shape.data))
+	for i := 0; i < t.Size(); i++ {
+		if rand.Float64() < p {
+			r.data[i] = 0
+		} else {
+			r.data[i] = t.data[i] / p
+		}
+	}
+
+	if t.requiresGrad {
+		r.SetRequiresGrad(true)
+		r.node = NewDropout2dBackward(t, p, r)
+	}
+	return
+}

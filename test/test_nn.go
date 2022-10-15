@@ -14,9 +14,9 @@ func TestXOR() {
 	target.SetData([]float64{1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0})
 
 	s := nn.NewSequential()
-	s.AddModule(nn.NewLinear(2, 3, true))
+	s.AddModule(nn.NewLinear(2, 5, true))
 	s.AddModule(nn.NewSigmoid())
-	s.AddModule(nn.NewLinear(3, 2, true))
+	s.AddModule(nn.NewLinear(5, 2, true))
 	s.AddModule(nn.NewSigmoid())
 
 	loss := loss.NewMSELoss()
@@ -25,7 +25,7 @@ func TestXOR() {
 	o := s.Forward(inp)
 	o.Print()
 
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 1000; i++ {
 		sgdOptim.ZeroGrad()
 		o := s.Forward(inp)
 		l := loss.Criterion(o, target)
