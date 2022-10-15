@@ -20,3 +20,11 @@ func (l *tanh) GetWeights() (weights []*data.Tensor) {
 	weights = []*data.Tensor{}
 	return
 }
+
+func (l *tanh) Train() {
+
+}
+
+func (l *tanh) Eval() {
+
+}

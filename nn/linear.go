@@ -40,3 +40,11 @@ func (l *linear) GetWeights() (weights []*data.Tensor) {
 	weights = append(weights, l.b)
 	return
 }
+
+func (l *linear) Train() {
+
+}
+
+func (l *linear) Eval() {
+
+}

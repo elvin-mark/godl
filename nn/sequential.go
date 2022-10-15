@@ -1,6 +1,8 @@
 package nn
 
-import "godl/data"
+import (
+	"godl/data"
+)
 
 type sequential struct {
 	modules []Module
@@ -30,4 +32,16 @@ func (s *sequential) GetWeights() (weights []*data.Tensor) {
 		weights = append(weights, module.GetWeights()...)
 	}
 	return
+}
+
+func (s *sequential) Train() {
+	for _, module := range s.modules {
+		module.Train()
+	}
+}
+
+func (s *sequential) Eval() {
+	for _, module := range s.modules {
+		module.Eval()
+	}
 }

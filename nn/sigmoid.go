@@ -20,3 +20,11 @@ func (l *sigmoid) GetWeights() (weights []*data.Tensor) {
 	weights = []*data.Tensor{}
 	return
 }
+
+func (l *sigmoid) Train() {
+
+}
+
+func (l *sigmoid) Eval() {
+
+}

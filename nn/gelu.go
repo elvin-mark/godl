@@ -20,3 +20,11 @@ func (l *gelu) GetWeights() (weights []*data.Tensor) {
 	weights = []*data.Tensor{}
 	return
 }
+
+func (l *gelu) Train() {
+
+}
+
+func (l *gelu) Eval() {
+
+}

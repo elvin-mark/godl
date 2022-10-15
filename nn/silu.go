@@ -20,3 +20,11 @@ func (l *silu) GetWeights() (weights []*data.Tensor) {
 	weights = []*data.Tensor{}
 	return
 }
+
+func (l *silu) Train() {
+
+}
+
+func (l *silu) Eval() {
+
+}

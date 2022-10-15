@@ -21,3 +21,11 @@ func (l *leakyReLU) GetWeights() (weights []*data.Tensor) {
 	weights = []*data.Tensor{}
 	return
 }
+
+func (l *leakyReLU) Train() {
+
+}
+
+func (l *leakyReLU) Eval() {
+
+}
