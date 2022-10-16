@@ -159,6 +159,42 @@ func (t *Tensor) Transpose() (r *Tensor) {
 	return
 }
 
+func (t *Tensor) Sum() (r *Tensor) {
+	r = NewTensor(NewShape([]int{1}))
+	for i := 0; i < t.Size(); i++ {
+		r.data[0] += t.data[i]
+	}
+	return
+}
+
+func (t *Tensor) SumByAxis(axis []int) (r *Tensor) {
+	// No gradients yet
+	if len(axis) > t.GetDim() {
+		panic("tensor index size mismatch")
+	}
+
+	new_shape := make([]int, t.GetDim())
+
+	for i := 0; i < t.GetDim(); i++ {
+		new_shape[i] = t.shape.data[i]
+	}
+
+	for i := 0; i < len(axis); i++ {
+		new_shape[axis[i]] = 1
+	}
+
+	r = NewTensor(NewShape(new_shape))
+	r.Zeros()
+	indices := NewIndices(t.GetDim())
+	r.SetBroadcast()
+	for i := 0; i < t.Size(); i++ {
+		r.data[r.stride.GetIndex(indices)] += t.data[i]
+		indices.Increment(t.shape)
+	}
+	r.UnsetBroadcast()
+	return
+}
+
 func (t *Tensor) Add(s *Tensor) (r *Tensor) {
 	if t.shape.Equals(s.shape) {
 		r = NewTensor(t.shape)
@@ -406,6 +442,7 @@ func (t *Tensor) GeLU() (r *Tensor) {
 	return
 }
 
+// Calculate the mean
 func (t *Tensor) Mean() (r *Tensor) {
 	r = NewTensor(NewShape([]int{1}))
 	sum := 0.
@@ -413,6 +450,27 @@ func (t *Tensor) Mean() (r *Tensor) {
 		sum += val
 	}
 	r.data[0] = sum / float64(t.shape.Size())
+	if t.requiresGrad {
+		r.SetRequiresGrad(true)
+		r.node = NewMeanBackward(t, r)
+	}
+	return
+}
+
+func (t *Tensor) MeanByAxis(axis []int) (r *Tensor) {
+	s := 1.0
+	r = t.SumByAxis(axis)
+	for i := 0; i < len(axis); i++ {
+		s *= float64(t.shape.data[axis[i]])
+	}
+	new_shape := make([]int, r.GetDim())
+	for i := 0; i < r.GetDim(); i++ {
+		new_shape[i] = 1
+	}
+	tmp := NewTensor(NewShape(new_shape))
+	tmp.data[0] = s
+	r = r.Div(tmp)
+
 	if t.requiresGrad {
 		r.SetRequiresGrad(true)
 		r.node = NewMeanBackward(t, r)
@@ -439,7 +497,6 @@ func (t *Tensor) Conv1d(s *Tensor, stride int, padding int) (r *Tensor) {
 	}
 	new_L := (L-K+2*padding)/stride + 1
 	new_shape := []int{N, Cout, new_L}
-
 	r = NewTensor(NewShape(new_shape))
 	t_idx := NewIndices(3)
 	s_idx := NewIndices(3)
@@ -666,6 +723,88 @@ func (t *Tensor) Dropout2d(p float64) (r *Tensor) {
 	if t.requiresGrad {
 		r.SetRequiresGrad(true)
 		r.node = NewDropout2dBackward(t, p, r)
+	}
+	return
+}
+
+func (t *Tensor) Softmax() (r *Tensor) {
+	// input: [N, C , ...]
+	// output: [N, C , ...]
+
+	r = NewTensor(t.shape)
+	num_batch := t.shape.data[0]
+	num_classes := t.shape.data[1]
+
+	// Loop over batches
+	for i := 0; i < t.shape.data[0]; i++ {
+		for j := 0; j < t.Size()/(num_batch*num_classes); j++ {
+			sum := 0.
+			for k := 0; k < num_classes; k++ {
+				r.data[i*t.stride.data[0]+k*t.stride.data[1]+j] = math.Exp(t.data[i*t.stride.data[0]+k*t.stride.data[1]+j])
+				sum += t.data[i*t.stride.data[0]+k*t.stride.data[1]+j]
+			}
+			for k := 0; k < num_classes; k++ {
+				r.data[i*t.stride.data[0]+k*t.stride.data[1]+j] /= sum
+			}
+		}
+
+	}
+	if t.requiresGrad {
+		r.SetRequiresGrad(true)
+		r.node = NewSoftmaxBackward(t, r)
+	}
+	return
+}
+
+func (t *Tensor) LogSoftmax() (r *Tensor) {
+	r = NewTensor(t.shape)
+	num_batch := t.shape.data[0]
+	num_classes := t.shape.data[1]
+
+	// Loop over batches
+	for i := 0; i < t.shape.data[0]; i++ {
+		for j := 0; j < t.Size()/(num_batch*num_classes); j++ {
+			sum := 0.
+			for k := 0; k < num_classes; k++ {
+				r.data[i*t.stride.data[0]+k*t.stride.data[1]+j] = math.Exp(t.data[i*t.stride.data[0]+k*t.stride.data[1]+j])
+				sum += r.data[i*t.stride.data[0]+k*t.stride.data[1]+j]
+			}
+			for k := 0; k < num_classes; k++ {
+				r.data[i*t.stride.data[0]+k*t.stride.data[1]+j] = math.Log(r.data[i*t.stride.data[0]+k*t.stride.data[1]+j] / sum)
+			}
+		}
+	}
+	if t.requiresGrad {
+		r.SetRequiresGrad(true)
+		r.node = NewLogSoftmaxBackward(t, r)
+	}
+	return
+}
+
+func (t *Tensor) Nll(s *Tensor) (r *Tensor) {
+	if t.GetDim() < 2 || t.GetDim() != s.GetDim() || t.shape.data[0] != s.shape.data[0] {
+		panic("input and target must have the same shape")
+	}
+
+	batchSize := t.shape.data[0]
+	targetStride := s.stride.data
+
+	kl_divergence := 0.
+	for i := 0; i < batchSize; i++ {
+		for j := 0; j < s.Size()/batchSize; j++ {
+			kl_divergence += -t.data[i*t.stride.data[0]+int(s.data[i*targetStride[0]+j])*t.stride.data[1]+j]
+		}
+	}
+
+	new_shape := make([]int, t.GetDim())
+	for i := 0; i < t.GetDim(); i++ {
+		new_shape[i] = 1
+	}
+	r = NewTensor(NewShape(new_shape))
+	r.data[0] = kl_divergence / float64(s.Size())
+	if t.requiresGrad {
+		r.SetRequiresGrad(true)
+		r.node = NewNLLBackward(t, s, r)
 	}
 	return
 }
