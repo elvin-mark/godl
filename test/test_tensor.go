@@ -1,7 +1,7 @@
 package test
 
 import (
-	data "godl/data"
+	data "github.com/elvin-mark/godl/data"
 )
 
 func TestSum() {

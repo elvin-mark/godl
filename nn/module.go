@@ -1,6 +1,6 @@
 package nn
 
-import "godl/data"
+import "github.com/elvin-mark/godl/data"
 
 type Module interface {
 	Forward(inp *data.Tensor) (out *data.Tensor)

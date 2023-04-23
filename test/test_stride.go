@@ -2,7 +2,8 @@ package test
 
 import (
 	"fmt"
-	"godl/data"
+
+	"github.com/elvin-mark/godl/data"
 )
 
 func TestStride() {

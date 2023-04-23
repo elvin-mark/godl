@@ -1,6 +1,6 @@
 package main
 
-import "godl/test"
+import "github.com/elvin-mark/godl/test"
 
 func main() {
 	test.TestNN()

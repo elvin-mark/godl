@@ -1,7 +1,7 @@
 package nn
 
 import (
-	data "godl/data"
+	data "github.com/elvin-mark/godl/data"
 )
 
 type relu struct {

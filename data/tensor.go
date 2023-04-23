@@ -741,7 +741,7 @@ func (t *Tensor) Softmax() (r *Tensor) {
 			sum := 0.
 			for k := 0; k < num_classes; k++ {
 				r.data[i*t.stride.data[0]+k*t.stride.data[1]+j] = math.Exp(t.data[i*t.stride.data[0]+k*t.stride.data[1]+j])
-				sum += t.data[i*t.stride.data[0]+k*t.stride.data[1]+j]
+				sum += r.data[i*t.stride.data[0]+k*t.stride.data[1]+j]
 			}
 			for k := 0; k < num_classes; k++ {
 				r.data[i*t.stride.data[0]+k*t.stride.data[1]+j] /= sum

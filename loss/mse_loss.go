@@ -1,6 +1,6 @@
 package loss
 
-import "godl/data"
+import "github.com/elvin-mark/godl/data"
 
 type mseLoss struct {
 }

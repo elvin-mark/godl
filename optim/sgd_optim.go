@@ -1,7 +1,7 @@
 package optim
 
 import (
-	"godl/data"
+	"github.com/elvin-mark/godl/data"
 )
 
 type sgdOptim struct {

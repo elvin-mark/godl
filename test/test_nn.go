@@ -1,26 +1,22 @@
 package test
 
 import (
-	"godl/data"
-	"godl/loss"
-	nn "godl/nn"
-	"godl/optim"
+	"github.com/elvin-mark/godl/data"
+	"github.com/elvin-mark/godl/loss"
+	"github.com/elvin-mark/godl/models"
+	"github.com/elvin-mark/godl/optim"
 )
 
 func TestXOR() {
 	inp := data.NewTensor(data.NewShape([]int{4, 2}))
-	target := data.NewTensor(data.NewShape([]int{4, 2}))
+	target := data.NewTensor(data.NewShape([]int{4, 1}))
 	inp.SetData([]float64{0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0})
-	target.SetData([]float64{1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0})
+	target.SetData([]float64{0.0, 1.0, 1.0, 0.0})
 
-	s := nn.NewSequential()
-	s.AddModule(nn.NewLinear(2, 5, true))
-	s.AddModule(nn.NewSigmoid())
-	s.AddModule(nn.NewLinear(5, 2, true))
-	s.AddModule(nn.NewSigmoid())
+	s := models.NewMLP(2, 10, 2)
 
-	loss := loss.NewMSELoss()
-	sgdOptim := optim.NewSGDOptimizer(s.GetWeights(), map[string]any{"lr": 0.2})
+	loss := loss.NewCELoss()
+	sgdOptim := optim.NewSGDOptimizer(s.GetWeights(), map[string]any{"lr": 0.001})
 
 	o := s.Forward(inp)
 	o.Print()
@@ -33,8 +29,7 @@ func TestXOR() {
 		sgdOptim.Step()
 	}
 	o = s.Forward(inp)
-	o.Print()
-
+	o.Softmax().Print()
 }
 
 func TestNN() {
